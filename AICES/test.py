@@ -18,6 +18,7 @@ biases2 = [-1, 2, -0.5]
 
 layer1_outputs = np.dot(inputs, np.array(weights).T) + biases
 # layer2 or neuron 2 gets input from neuron 1
+print(layer1_outputs)
 layer2_outputs = np.dot(layer1_outputs, weights2) + biases2
 print(layer2_outputs)
 
