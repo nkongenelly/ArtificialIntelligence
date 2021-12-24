@@ -1,15 +1,24 @@
-# import numpy as np
+import numpy as np
 import math 
 
-softmax_output = [0.7,0.1,0.2]
-target_output = [1,0,0]
+softmax_outputs= np.array([[0.7, 0.2, 0.1],
+							[0.5, 0.1, 0.4],
+							[0.02, 0.9, 0.08]])
+target_output = [0, 1, 1]
 
-loss = -(math.log(softmax_output[0]) * target_output[0] + 
-		math.log(softmax_output[1]) * target_output[1] + 
-		math.log(softmax_output[2]) * target_output[2])
+# accuracy calculations
+predictions = np.argmax(softmax_outputs, axis=1)
+accuracy = np.mean(predictions == target_output)
 
-print(loss)
-print(-math.log(0.7))
+print(accuracy)
+
+# loss = -(math.log(softmax_output[0]) * target_output[0] + 
+# 		math.log(softmax_output[1]) * target_output[1] + 
+# 		math.log(softmax_output[2]) * target_output[2])
+
+# print(loss)
+# print(-math.log(0.7))
+
 
 # layer_outputs = [[4.8, 1.21, 2.385],
 # 				 [8.9, -1.81, 0.2],

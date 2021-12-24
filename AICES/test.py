@@ -1,4 +1,7 @@
 import numpy as np
+import math
+
+e = math.e
 
 np.random.seed(0)
 inputs = [[1, 2, 3, 2.5],
@@ -43,6 +46,29 @@ class Activation_Softmax:
         probabilities = exp_values / np.sum(exp_values, axis=1, keepdims=True)
         self.output = probabilities
 
+class Loss:
+    def calculate(self, output, y):
+        sample_losses = self.forward(output,y)
+        data_loss = np.mean(sample_losses)
+        return data_loss
+
+class Loss_CategoricalCrossentropy(Loss):
+    def forward(self, y_pred, y_true):
+        samples_length = len(y_pred)
+        # clip to avoid doing lof of zer as it is infinity
+        y_pred_clipped = np.clip(y_pred, 1e-7, 1-1e-7)
+
+        if len(y_true.shape) == 1:
+            # picking the values from the output according to the y-true... that will  not be multiplied by zero
+            correct_confidences = y_pred_clipped[range(samples_length), y_true]
+
+        elif len(y_true.shape) == 2:
+            correct_confidences = np.sum(y_pred_clipped * y_true, axis=1)
+
+        negative_log_likelihoods = -np.log(correct_confidences)
+        return negative_log_likelihoods
+
+
 X, y = create_data(100,3)
 dense1 = Layer_Dense(2,3)
 activation1 = Activation_ReLU()
@@ -58,6 +84,13 @@ dense2.forward(activation1.output)
 activation2.forward(dense2.output)
 
 print(activation2.output[:5])
+
+# Calculate loss
+loss_function = Loss_CategoricalCrossentropy()
+loss = loss_function.calculate(activation2.output, y)
+
+print("Loss:",loss)
+
 
 
 
