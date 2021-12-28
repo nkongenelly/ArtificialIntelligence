@@ -104,5 +104,23 @@ print(f'Actual number of hyperparameters: {act_n_param}')
 print(f'Number of data: {X_num_col}')
 
 if act_n_param >= X_num_col:
-	print('it will overfit')
+	# print('it will overfit')
 	raise Exception('it will overfit.')
+
+# 6. FORWARD PROPAGATION
+def activation(input_, act_func):
+	if act_func == 'relu':
+		return np.maximum(input_, np.zeros(input_.shape))
+	elif act_func == 'linear':
+		return input_
+	else:
+		raise Exception('Activation function is not defined.')
+
+def forward_prop(input_vec, layers_dim=layers_dim, neural_net= neural_net):
+	neural_net[0].A = input_vec #Define A in input layer fof for-loop convenience
+	for layer_index in ranfe(1, len(layers_dim)):
+		neural_net[layer_index].Z = np.add(np.dot(neural_net[layer_index].W, neural_net[layer_index-1].a), neural_net[layer_index].b)
+		neural_net[layer_index].A = activation(neural_net[layer_index].Z, neural_net[layer_index].activation)
+	return neural_net[layer_index].A
+
+#7. BACK PROPAGATION
