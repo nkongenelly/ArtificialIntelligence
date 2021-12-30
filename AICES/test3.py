@@ -45,7 +45,7 @@ def get_scaler(row):
 def standardize(data, scaler):
 	return (data - scaler.mean) / scaler.std
 
-def unstanderdize(data, scaler):
+def unstandardize(data, scaler):
 	return (data * scaler.std) + scaler.mean
 
 # Construct scalers (column scalers) from training set
@@ -118,9 +118,72 @@ def activation(input_, act_func):
 
 def forward_prop(input_vec, layers_dim=layers_dim, neural_net= neural_net):
 	neural_net[0].A = input_vec #Define A in input layer fof for-loop convenience
-	for layer_index in ranfe(1, len(layers_dim)):
+	for layer_index in range(1, len(layers_dim)):
 		neural_net[layer_index].Z = np.add(np.dot(neural_net[layer_index].W, neural_net[layer_index-1].a), neural_net[layer_index].b)
 		neural_net[layer_index].A = activation(neural_net[layer_index].Z, neural_net[layer_index].activation)
 	return neural_net[layer_index].A
 
 #7. BACK PROPAGATION
+def get_loss(y, y_hat, metric='mse'):
+    if metric == 'mse':
+        individual_loss = 0.5 * (y_hat - y) ** 2
+        return np.mean([np.linalg.norm(individual_loss[:,col], 2) for col in range(individual_loss.shape[1])])
+    else:
+        raise Exception('Loss metric is not defined.')
+
+def get_dZ_from_loss(y, y_hat, metric):
+    if metric == 'mse':
+        return y_hat - y
+    else:
+        raise Exception('Loss metric is not defined.')
+
+def get_dactivation(A, act_func):
+    if act_func == 'relu':
+        return np.maximum(np.sign(A), np.zeros(A.shape)) # 1 if backward input >0, 0 otherwise; then diaganolize
+    elif act_func == 'linear':
+        return np.ones(A.shape)
+    else:
+        raise Exception('Activation function is not defined.')
+        
+        
+def backward_prop(y, y_hat, metric='mse', layers_dim=layers_dim, neural_net=neural_net, num_train_datum=num_train_datum):
+    for layer_index in range(len(layers_dim)-1,0,-1):
+        if layer_index+1 == len(layers_dim): # if output layer
+            dZ = get_dZ_from_loss(y, y_hat, metric)
+        else: 
+            dZ = np.multiply(np.dot(neural_net[layer_index+1].W.T, dZ), 
+                             get_dactivation(neural_net[layer_index].A, neural_net[layer_index].activation))
+        dW = np.dot(dZ, neural_net[layer_index-1].A.T) / num_train_datum
+        db = np.sum(dZ, axis=1, keepdims=True) / num_train_datum
+        
+        neural_net[layer_index].dW = dW
+        neural_net[layer_index].db = db
+
+# 8. Iterative Optimization
+learning_rate = 0.01
+max_epoch = 1000000
+
+for epoch in range(1,max_epoch+1):
+    y_hat_train = forward_prop(X_train) # update y_hat
+    backward_prop(y_train, y_hat_train) # update (dW,db)
+    
+    for layer_index in range(1,len(layers_dim)):        # update (W,b)
+        neural_net[layer_index].W = neural_net[layer_index].W - learning_rate * neural_net[layer_index].dW
+        neural_net[layer_index].b = neural_net[layer_index].b - learning_rate * neural_net[layer_index].db
+    
+    if epoch % 100000 == 0:
+        print(f'{get_loss(y_train, y_hat_train):.4f}')
+
+# 9. Testing
+# test loss
+
+print(get_loss(y_test, forward_prop(X_test)))
+
+def predict(X_raw_any):
+    X_any = np.array([standardize(X_raw_any[row,:], X_scalers[row]) for row in range(X_num_row)])
+    y_hat = forward_prop(X_any)
+    y_hat_any = np.array([unstandardize(y_hat[row,:], y_scalers[row]) for row in range(y_num_row)])
+    return y_hat_any
+    
+predict(np.array([[30,70],[70,30],[3,5],[888,122]]).T)
+
