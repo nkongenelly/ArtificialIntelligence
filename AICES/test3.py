@@ -119,7 +119,7 @@ def activation(input_, act_func):
 def forward_prop(input_vec, layers_dim=layers_dim, neural_net= neural_net):
 	neural_net[0].A = input_vec #Define A in input layer fof for-loop convenience
 	for layer_index in range(1, len(layers_dim)):
-		neural_net[layer_index].Z = np.add(np.dot(neural_net[layer_index].W, neural_net[layer_index-1].a), neural_net[layer_index].b)
+		neural_net[layer_index].Z = np.add(np.dot(neural_net[layer_index].W, neural_net[layer_index-1].A), neural_net[layer_index].b)
 		neural_net[layer_index].A = activation(neural_net[layer_index].Z, neural_net[layer_index].activation)
 	return neural_net[layer_index].A
 
