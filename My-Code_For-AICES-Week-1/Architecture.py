@@ -6,4 +6,4 @@ class Architecture:
         descriptionList = description.split(",")
 
         for dLI in range(0, len(description) - 1, 1):
-            sum(int(descriptionList[dLI]))
+           descriptionList += descriptionList[dLI]
