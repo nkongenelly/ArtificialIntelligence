@@ -5,15 +5,15 @@ import math
 # print(Synapse.Synapse().weight)
 # print(random.uniform(0.0, 1.0))
 class Neuron:
-    eta = 0.0
-    alpha = 0.0
+    # eta = 0.0
+    # alpha = 0.0
     gradient = 0.0
-    outcomme = 0.0
-    neuronId = 0
-    numberOfWeightsFromNextNeuron = 0
+    outcome = 0.0
+    # neuronId = 0
+    # numberOfWeightsFromNextNeuron = 0
     weights = []
 
-    def __init__(self, eta, alpha, gradient, outcome, neuronId, numberOfWeightsFromNextNeuron, weights):
+    def __init__(self, eta=0.0, alpha=0.0, numberOfWeightsFromNextNeuron=0, neuronId=0,):
         self.eta = eta
         self.alpha = alpha
         self.numberOfWeightsFromNextNeuron = numberOfWeightsFromNextNeuron
@@ -21,13 +21,13 @@ class Neuron:
         self.gradient = 0.0
 
         for wI in range(0, numberOfWeightsFromNextNeuron - 1, 1):
-            weights.append(Synapse.Synapse())
-            weights[wI] = random.uniform(0.0, 1.0)
+            self.weights.append(Synapse.Synapse())
+            self.weights[wI] = random.uniform(0.0, 1.0)
 
     # methods
     # Observe stuff about neuronn
     def getOutcome(self):
-        return self.outcomme
+        return self.outcome
 
     def getGradient(self):
         return self.gradient
@@ -52,18 +52,18 @@ class Neuron:
 
     # modify stuff about neuron
     def setOutcome(self, value):
-        self.outcomme = value
+        self.outcome = value
 
     def setGradient(self, value):
         self.gradient = value
 
     def setHiddenGradient(self, nextLayer):
         delta = self.getDistributedWeight(nextLayer)
-        self.setGradient(self.getPrimeActivation(self.outcomme) * delta)
+        self.setGradient(self.getPrimeActivation(self.outcome) * delta)
 
     def setOutcomeGradient(self, target):
         delta = target - self.outcome
-        self.setGradient(self.getPrimeActivation(self.outcomme) * delta)
+        self.setGradient(self.getPrimeActivation(self.outcome) * delta)
 
     def doForwardPropagation(self, priorLayer):
         sigma = 0.0
