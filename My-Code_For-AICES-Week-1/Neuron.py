@@ -5,15 +5,15 @@ import math
 # print(Synapse.Synapse().weight)
 # print(random.uniform(0.0, 1.0))
 class Neuron:
-    # eta = 0.0
-    # alpha = 0.0
+    eta = 0.0
+    alpha = 0.0
     gradient = 0.0
     outcome = 0.0
-    # neuronId = 0
-    # numberOfWeightsFromNextNeuron = 0
+    neuronId = 0
+    numberOfWeightsFromNextNeuron = 0
     weights = []
 
-    def __init__(self, eta=0.0, alpha=0.0, numberOfWeightsFromNextNeuron=0, neuronId=0,):
+    def __init__(self, eta, alpha, numberOfWeightsFromNextNeuron, neuronId,):
         self.eta = eta
         self.alpha = alpha
         self.numberOfWeightsFromNextNeuron = numberOfWeightsFromNextNeuron

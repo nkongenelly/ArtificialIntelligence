@@ -25,20 +25,22 @@ class NeuralNetwork:
 
                 self.layers[lSI].append(self.newNeuron)
 
-                self.layers[lSI][len(self.layers[lSI]) - 1](Neuron().setOutcome(1.0))
+                self.layers[lSI][len(self.layers[lSI]) - 1] * (Neuron().setOutcome(1.0))
 
     # do forward propagation
     def doForwardPropagation(self, inputs):
         # pass inputs to 1st layer of neural network
+        print("doForwardPropagation inputs = ", len(inputs))
+        print("doForwardPropagation self.layers before = ", vars(self.layers[0]))
         for iI in range(0, len(inputs) - 1, 1):
-            self.layers[0][iI](Neuron().setOutcome(inputs[iI]))
-            print("doForwardPropagation = ")
+            self.layers[0][iI] * (Neuron().setOutcome(inputs[iI]))
+            print("doForwardPropagation layers = ")
             print(self.layers)
 
         for lSI in range(1,len(self.architecture) - 1, 1):
             priorLayer = self.layers[lSI - 1];
             for lI in range(0, self.architecture[lSI] - 1, 1):
-                self.layers[lSI][lI](Neuron().doForwardPropagation(priorLayer))
+                self.layers[lSI][lI] * (Neuron().doForwardPropagation(priorLayer))
 
     # backward propagation
     def doBackwardPropagation(self, target):
@@ -52,16 +54,16 @@ class NeuralNetwork:
             nextLayer = self.layers[lSI + 1]
 
             for lI in range(0, len(currentLayer) - 1, 1):
-                currentLayer[lI](Neuron().setHiddenGradient(nextLayer))
+                currentLayer[lI] * (Neuron().setHiddenGradient(nextLayer))
 
         # update weights
         for lSI in range(len(self.layers) -1, 1, -1):
             currentLayer = self.layers[lSI]
             priorLayer = self.layers[lSI - 1]
             for lI in range(0, len(currentLayer) - 2, 1):
-                currentLayer[lI](Neuron().updateWeight(priorLayer))
+                currentLayer[lI] * (Neuron().updateWeight(priorLayer))
 
     # get outcome of neural network
     def getOutcome(self):
-        print("layers = ", self.layers[0].eta)
-        return self.layers[len(self.layers) - 1].eta * (Neuron().getOutcome())
+        # print("layers = ", self.layers[0][0])
+        return self.layers[len(self.layers) - 1][0] * (Neuron().getOutcome())

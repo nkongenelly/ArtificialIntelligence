@@ -7,10 +7,9 @@ class RunNeuralNetwork:
     # main function
     def main(self):
         self.doTraining()
-        self.showMainMenu()
+        # self.showMainMenu()
 
     def showMainMenu(self):
-        print("showmainmenu")
         print("Universal Ai Diploma Neural Network")
         print("1. Get neural answer for xor input 0, 0 ")
         print("2. Get neural answer for xor input 0, 1 ")
@@ -56,14 +55,19 @@ class RunNeuralNetwork:
 
     def doTraining(self):
         print("doTraining")
-        trainingData = [self.getTrainingData()]
+        trainingData = self.getTrainingData()
+        print("training datta length = ", len(trainingData))
 
         for tDI in range(0, len(trainingData) -1, 1):
             # forward prop
             trainingInputLine = trainingData[tDI].split("::")[0]
             firstInput = int(trainingInputLine.split(",")[0])
             secondInput = int(trainingInputLine.split(",")[1])
-            inputs = [{firstInput, secondInput}]
+            inputs = [firstInput, secondInput]
+            # print("trainingInputLine = ", trainingInputLine)
+            # print("firstInput = ", firstInput)
+            # print("secondInput = ", secondInput)
+            # print("inputs = ", inputs)
 
             self.neuralNetwork.doForwardPropagation(inputs)
 
