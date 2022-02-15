@@ -5,20 +5,13 @@ import math
 # print(Synapse.Synapse().weight)
 # print(random.uniform(0.0, 1.0))
 class Neuron:
-    eta = 0.0
-    alpha = 0.0
-    gradient = 0.0
-    outcome = 0.0
-    neuronId = 0
-    numberOfWeightsFromNextNeuron = 0
-    weights = []
-
     def __init__(self, eta, alpha, numberOfWeightsFromNextNeuron, neuronId,):
         self.eta = eta
         self.alpha = alpha
         self.numberOfWeightsFromNextNeuron = numberOfWeightsFromNextNeuron
         self.neuronId = neuronId
         self.gradient = 0.0
+        self.weights = []
 
         for wI in range(0, numberOfWeightsFromNextNeuron - 1, 1):
             self.weights.append(Synapse.Synapse())
@@ -39,14 +32,14 @@ class Neuron:
         return math.tanh(value)
 
     def getPrimeActivation(self, value):
-        return 1 -  math ** (math.tanh(value), 2)
+        return 1 -  math.pow(math.tanh(value), 2)
 
     def getDistributedWeight(self, nextLayer):
         sigma = 0.0
 
         # this neuron's weights * the gradient of other neurons
         for nLI in range(0, len(nextLayer) - 2, 1):
-            sigma += self.getWeights()[nLI].Synapse.Synapse().getWeight() * nextLayer[nLI].getGradient()
+            sigma += self.getWeights()[nLI] * (Synapse.Synapse().getWeight()) * nextLayer[nLI].getGradient()
 
         return sigma
 

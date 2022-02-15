@@ -1,7 +1,7 @@
 from Layer import Layer
 import sys
 
-class Layers(Layer):
+class Layers(Layer()):
     pass
     # def __len__(self):
     #     return len(self)

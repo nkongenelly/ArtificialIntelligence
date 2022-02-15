@@ -3,11 +3,10 @@ class Architecture():
     description = ''
 
     def __init__(self, description):
-        descriptionList = description.split(",")
-        self.descriptionList = descriptionList
+        self.descriptionList = [description.split(",")]
 
-        for dLI in range(0, len(description) - 1, 1):
-           descriptionList += descriptionList[dLI]
+        # for dLI in range(0, len(self.descriptionList) - 1, 1):
+        #    self.add(int(self.descriptionList[dLI]))
 
     def __len__(self):
         return len(self.descriptionList)

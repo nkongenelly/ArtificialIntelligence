@@ -2,12 +2,13 @@ from NeuralNetwork import NeuralNetwork
 import sys
 class RunNeuralNetwork:
     # features
-    neuralNetwork =  NeuralNetwork()
+    neuralNetwork = NeuralNetwork()
+    print("new NeuralNetwork = ", vars(neuralNetwork))
 
     # main function
     def main(self):
         self.doTraining()
-        # self.showMainMenu()
+        self.showMainMenu()
 
     def showMainMenu(self):
         print("Universal Ai Diploma Neural Network")

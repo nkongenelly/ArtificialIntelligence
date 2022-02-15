@@ -1,4 +1,7 @@
 import math
+import sys
+import random
+
 class Synapse :
     # feature
     # methods
@@ -25,7 +28,8 @@ class Neuron :
         wI = 0
         while (wI < numberOfWeightsFromNextNeuron) :
             self.weights.append(Synapse())
-            self.weights[wI].setWeight( java.util.Random().nextDouble())
+            self.weights[wI] = random.uniform(0.0, 1.0)
+            # self.weights[wI].setWeight( java.util.Random().nextDouble())
             wI += 1
     # methods
     # observe stuff about neuron
@@ -44,8 +48,9 @@ class Neuron :
         # this neuron's weights * the gradient of other neurons
         nLI = 0
         while (nLI < len(nextLayer) - 1) :
-sigma += self.getWeights()[nLI].getWeight() * nextLayer[nLI].getGradient()    nLI += 1
-        return sigma
+            sigma += self.getWeights()[nLI].getWeight() * nextLayer[nLI].getGradient()
+            nLI += 1
+            return sigma
     # modify stuff about neuron
     def setOutcome(self, value) :
         self.outcome = value
@@ -62,8 +67,9 @@ sigma += self.getWeights()[nLI].getWeight() * nextLayer[nLI].getGradient()    nL
         # other layer weights * other layer outcome
         pLI = 0
         while (pLI < len(priorLayer)) :
-sigma += priorLayer[pLI].getWeights()[self.neuronId].getWeight() * priorLayer[pLI].getOutcome()    pLI += 1
-        self.setOutcome(self.getActivation(sigma))
+            sigma += priorLayer[pLI].getWeights()[self.neuronId].getWeight() * priorLayer[pLI].getOutcome()
+            pLI += 1
+            self.setOutcome(self.getActivation(sigma))
     def updateWeight(self, priorLayer) :
         pLI = 0
         while (pLI < len(priorLayer)) :
@@ -75,28 +81,34 @@ sigma += priorLayer[pLI].getWeights()[self.neuronId].getWeight() * priorLayer[pL
             # set our weights
             priorLayer[pLI].getWeights()[self.neuronId].setWeight(priorLayer[pLI].getWeights()[self.neuronId].getWeight() + newDeltaWeight)
             pLI += 1
-class Layer([]) :
-class Layers([]) :
-class Architecture([]) :
+
+class Layer(list) :
+    pass
+class Layers(list) :
+    pass
+class Architecture(list) :
     # features
     # constructor
     #  "2,2,1"
     def __init__(self, description) :
         descriptionList = description.split(",")
-        dLI = 0
-        while (dLI < len(descriptionList)) :
-self.add(int(descriptionList[dLI]))    dLI += 1
+        # dLI = 0
+        # while (dLI < len(descriptionList)) :
+        #     descriptionList[dLI] = dLI
+        #     # self.add(int(descriptionList[dLI]))
+        #     dLI += 1
 class NeuralNetwork :
     # features
     eta = 0.2
     alpha = 0.5
-    layers = Layers()
+    layers = Layers([])
     architecture = Architecture("2,2,1")
     # constructor
     def __init__(self) :
         lSI = 0
         while (lSI < len(self.architecture)) :
-            self.layers.append(Layer())
+            self.layers.append(Layer([]))
+            print("doForwardPropagation self.layers before = ", self.layers)
             lI = 0
             while (lI <= self.architecture[lSI]) :
                 # Neuron ( double eta, double alpha, int numberOfWeightsFromNextNeuron, int neuronId )
@@ -116,8 +128,10 @@ class NeuralNetwork :
         # pass inputs to 1st layer of neural network
         print("layers beeeefore = : " + str(self.layers))
         iI = 0
+        # if(len(self.layers) > 0):
         while (iI < len(inputs)) :
-self.layers[0][iI].setOutcome(inputs[iI])    iI += 1
+            self.layers[0][iI].setOutcome(inputs[iI])
+            iI += 1
         #
         lSI = 1
         while (lSI < len(self.architecture)) :
@@ -139,7 +153,8 @@ self.layers[0][iI].setOutcome(inputs[iI])    iI += 1
             nextLayer = self.layers[lSI + 1]
             lI = 0
             while (lI < len(currentLayer)) :
-currentLayer[lI].setHiddenGradient(nextLayer)    lI += 1
+                currentLayer[lI].setHiddenGradient(nextLayer)
+                lI += 1
             lSI -= 1
         # update weights
         lSI = len(self.layers) - 1
@@ -148,7 +163,8 @@ currentLayer[lI].setHiddenGradient(nextLayer)    lI += 1
             priorLayer = self.layers[lSI - 1]
             lI = 0
             while (lI < len(currentLayer) - 1) :
-currentLayer[lI].updateWeight(priorLayer)    lI += 1
+                currentLayer[lI].updateWeight(priorLayer)
+                lI += 1
             lSI -= 1
     # get outcome of neural network
     def  getOutcome(self) :
@@ -158,13 +174,14 @@ class RunNeuralNetwork :
     neuralNetwork = NeuralNetwork()
     userScanner =  "Python-inputs"
     # main function
-    @staticmethod
-    def main( anything) :
+    # @staticmethod
+    def main(self) :
         self.doTraining()
+        # self.doTraining()
         self.showMainMenu()
     # test the neural network
-    @staticmethod
-    def showMainMenu() :
+    # @staticmethod
+    def showMainMenu(self) :
         print("Universal Ai Diploma Neural Network")
         print("1. Get neural answer for xor input 0, 0 ")
         print("2. Get neural answer for xor input 0, 1 ")
@@ -197,13 +214,13 @@ class RunNeuralNetwork :
                 print("Answer for input 1,1 is : " + str(answer))
                 self.returnToMainMenu()
         elif(option==5):
-                System.exit(0)
-    @staticmethod
-    def returnToMainMenu() :
+                sys.exit(0)
+    # @staticmethod
+    def returnToMainMenu(self) :
         input()
         self.showMainMenu()
-    @staticmethod
-    def doTraining() :
+    # @staticmethod
+    def doTraining(self) :
         trainingData = self.getTrainingData()
         tDI = 0
         while (tDI < len(trainingData)) :
@@ -217,8 +234,8 @@ class RunNeuralNetwork :
             outputValuePerTrainingLine = int(trainingData[tDI].split("::")[1])
             self.neuralNetwork.doBackwardPropagation(outputValuePerTrainingLine)
             tDI += 1
-    @staticmethod
-    def  getTrainingData() :
+    # @staticmethod
+    def  getTrainingData(self) :
         returnValue =  []
         returnValue.append("0,0::0")
         returnValue.append("0,1::1")
@@ -1127,5 +1144,8 @@ class RunNeuralNetwork :
         return returnValue
 
 
-if __name__=="__main__":
-    RunNeuralNetwork.main([])
+# if __name__=="__main__":
+#     RunNeuralNetwork.main([])
+
+main = RunNeuralNetwork()
+main.main()

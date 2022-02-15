@@ -9,8 +9,8 @@ class NeuralNetwork:
     eta = 0.2
     alpha = 0.5
 
-    layers = [Layers()]
-    architecture = [Architecture("2,2,1")]
+    layers = Layers()
+    architecture = Architecture("2,2,1")
 
     def __init__(self):
         for lSI in range(0, len(self.architecture) -1, 1):
@@ -21,9 +21,9 @@ class NeuralNetwork:
                 # FORMULA: IF lSI + 1 < architecture.size() arch(lSI + 1) else 0 ....a if condition else b
                 numberOfWeightsFromNextNeuron = self.architecture[lSI + 1] if lSI + 1 < len(self.architecture) else 0
 
-                self.newNeuron = Neuron(self.eta, self.alpha, numberOfWeightsFromNextNeuron, lI)
+                newNeuron = Neuron(self.eta, self.alpha, numberOfWeightsFromNextNeuron, lI)
 
-                self.layers[lSI].append(self.newNeuron)
+                self.layers[lSI].append(newNeuron)
 
                 self.layers[lSI][len(self.layers[lSI]) - 1] * (Neuron().setOutcome(1.0))
 
@@ -31,16 +31,31 @@ class NeuralNetwork:
     def doForwardPropagation(self, inputs):
         # pass inputs to 1st layer of neural network
         print("doForwardPropagation inputs = ", len(inputs))
-        print("doForwardPropagation self.layers before = ", vars(self.layers[0]))
-        for iI in range(0, len(inputs) - 1, 1):
-            self.layers[0][iI] * (Neuron().setOutcome(inputs[iI]))
-            print("doForwardPropagation layers = ")
-            print(self.layers)
-
-        for lSI in range(1,len(self.architecture) - 1, 1):
-            priorLayer = self.layers[lSI - 1];
-            for lI in range(0, self.architecture[lSI] - 1, 1):
-                self.layers[lSI][lI] * (Neuron().doForwardPropagation(priorLayer))
+        print("doForwardPropagation self.layers before = ", self.layers)
+        iI = 0
+        # print("index inputs ? = ", self.layers[0])
+        while (iI < len(inputs)):
+            # print("index iI ? = ", iI)
+            self.layers[0][iI].setOutcome(inputs[iI])
+            iI += 1
+        #
+        lSI = 1
+        while (lSI < len(self.architecture)):
+            priorLayer = self.layers[lSI - 1]
+            lI = 0
+            while (lI < self.architecture[lSI]):
+                self.layers[lSI][lI].doForwardPropagation(priorLayer)
+                lI += 1
+            lSI += 1
+        # for iI in range(0, len(inputs) - 1, 1):
+        #     self.layers[0][iI] * (Neuron().setOutcome(inputs[iI]))
+        #     print("doForwardPropagation layers = ")
+        #     print(self.layers)
+        #
+        # for lSI in range(1,len(self.architecture) - 1, 1):
+        #     priorLayer = self.layers[lSI - 1];
+        #     for lI in range(0, self.architecture[lSI] - 1, 1):
+        #         self.layers[lSI][lI] * (Neuron().doForwardPropagation(priorLayer))
 
     # backward propagation
     def doBackwardPropagation(self, target):
