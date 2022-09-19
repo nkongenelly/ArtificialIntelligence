@@ -4,8 +4,8 @@ from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.base import BaseEstimator, TransformerMixin
 
 class Var_Selector(BaseEstimator, TransformerMixin):
-    def __init__(self, var_name):
-        self.feature_names = var_name
+    def __init__(self, feature_names):
+        self.feature_names = feature_names
     def fit(self,x,y=None):
         return self
     def transform(self,x):
@@ -21,7 +21,7 @@ class Impute_Missing(BaseEstimator, TransformerMixin):
         self.feature_names=x.columns
 
         for col in x.columns:
-            if x[col].dtype=='0':
+            if x[col].dtype=='O':
                 self.impute_dict[col]='missing'
             else:
                 self.impute_dict[col]=x[col].median()
@@ -55,10 +55,10 @@ class Categorigal_Dummies(BaseEstimator, TransformerMixin):
         for col in data_cols:
             k=x[col].value_counts()
 
-            if(k==self.freq_cutoff).sum() == 0:
+            if(k<=self.freq_cutoff).sum() == 0:
                 cats=k.index[:-1]
             else:
-                cats=k.index(k=self.freq_cutoff)
+                cats=k.index[k>self.freq_cutoff]
             self.var_cut_dict[col]=cats
 
         for col in self.var_cut_dict.keys():
@@ -102,7 +102,7 @@ class Fico_separation(BaseEstimator, TransformerMixin):
     def fit(self, x, y=None):
         return self
     def transform(self, x):
-        k=x('FICO.range').str.split("-", expand=True).astype(float)
+        k=x('FICO.Range').str.split("-", expand=True).astype(float)
         fico = 0.5*(k[0] + k[1])
         return pd.Dataframe({'fico':fico})
     def get_feature_names(self):
