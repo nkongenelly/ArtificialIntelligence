@@ -13,6 +13,7 @@ class Var_Selector(BaseEstimator, TransformerMixin):
         return x[self.feature_names]
     def get_feature_names(self):
         return self.feature_names
+
 class Convert_Datetime_Type(BaseEstimator, TransformerMixin):
     def __init__(self):
         self.feature_names = []
@@ -57,14 +58,14 @@ class ExtractDatetimeCyclic(BaseEstimator, TransformerMixin):
             month = x[col].dt.month #January = 1 and December = 12
             day_of_month = x[col].dt.day
 
-            x[col+'_'+'week'+'_sin']=np.sin(2*np.pi*weekday)/self.week_freq
-            x[col+'_'+'week'+'_cos']=np.cos(2*np.pi*weekday)/self.week_freq
+            x[col+'_'+'weekday'+'_sin']=np.sin(2*np.pi*weekday)/self.week_freq
+            x[col+'_'+'weekday'+'_cos']=np.cos(2*np.pi*weekday)/self.week_freq
 
             x[col+'_'+'month'+'_sin']=np.sin(2*np.pi*month)/self.month_freq
             x[col+'_'+'month'+'_cos']=np.cos(2*np.pi*month)/self.month_freq
 
-            x[col+'_'+'month_day'+'_sin']=np.sin(2*np.pi*day_of_month)/self.month_day_freq
-            x[col+'_'+'month_day'+'_cos']=np.cos(2*np.pi*day_of_month)/self.month_day_freq
+            x[col+'_'+'day_of_month'+'_sin']=np.sin(2*np.pi*day_of_month)/self.month_day_freq
+            x[col+'_'+'day_of_month'+'_cos']=np.cos(2*np.pi*day_of_month)/self.month_day_freq
 
             del x[col]
             # for features in self.feature_names:
@@ -76,11 +77,12 @@ class ExtractDatetimeCyclic(BaseEstimator, TransformerMixin):
         return x
     def get_feature_names(self):
         return self.feature_names
+
 class TimeDifference(BaseEstimator, TransformerMixin):
     def __init__(self):
         self.feature_names = ['dates_diff_min']
     def fit(self,x ,y=None):
-        self.feature_names = x.columns
+        return self
     def transform(self,x):
         diff = (x.iloc[:,0]-x.iloc[:,1]).dt.days
         return pd.DataFrame({'dates_diff_min': diff})
@@ -92,15 +94,15 @@ class DataFrameImputer(BaseEstimator, TransformerMixin):
         self.feature_names = []
         self.impute_dict = {}
     def fit(self, x, y=None):
+        self.feature_names=x.columns
         for col in x.columns:
             if x[col].dtype == 'O':
                 self.impute_dict[col]='missing'
             else:
-                self.impute_dict[col] = x[col].mean()
+                self.impute_dict[col] = x[col].median()
         return self
     def transform(self,x):
-        for col in x.columns:
-            col.fillna(self.impute_dict)
+        return x.fillna(self.impute_dict)
     def get_feature_names(self):
         return self.feature_names
     
@@ -118,7 +120,7 @@ class Get_Dummies(BaseEstimator, TransformerMixin):
                 categories = k.index[:-1]
             else:
                 categories = k.index[k>self.freequency_cutoff]
-            self.var_cut_dict[col]=categories
+            self.var_cut_dict[cols]=categories
         for col in self.var_cut_dict.keys():
             for cat in self.var_cut_dict[col]:
                 self.feature_names.append(col+'_'+str(cat))
