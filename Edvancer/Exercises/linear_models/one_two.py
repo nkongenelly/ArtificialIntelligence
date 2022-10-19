@@ -1,17 +1,25 @@
-from pprint import pprint
+#%%
 from tabnanny import verbose
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Ridge
+from sklearn.linear_model import Lasso
+from sklearn. linear_model import ElasticNet
 from sklearn.preprocessing import StandardScaler
 from sklearn.feature_selection import RFE
 from sklearn.metrics import r2_score
+from sklearn.metrics import mean_absolute_error
+import matplotlib.pyplot as plt
+from sklearn.model_selection import KFold
+from sklearn.model_selection import cross_val_score
 
 from operator import itemgetter
 
-file = r'/mnt/d/AI_ML/AI/Machine Learning in Python/data/data/facebook_comments.csv'
+file = r'D:\AI_ML\AI\Machine Learning in Python\data\data\facebook_comments.csv'
+# file = r'/mnt/d/AI_ML/AI/Machine Learning in Python/data/data/facebook_comments.csv'
 
 facebook_comments = pd.read_csv(file)
 
@@ -83,6 +91,71 @@ def cyclic_features(facebook_comments):
     print(facebook_comments.shape)
     return facebook_comments
 
+def best_feature_no(model_lr, scoring):
+    model_lr.fit(X_train, y_train)
+
+    # Use grid searchCV to find best number of features
+    param_grid = {'n_features_to_select': np.arange(0,85,5)}
+    folds = KFold(n_splits=5, shuffle=True, random_state=100)
+
+    feature_search = GridSearchCV(estimator = RFE(model_lr), param_grid = param_grid, scoring = scoring , cv = folds, return_train_score=True)
+    feature_search.fit(X_train, y_train)
+    feature_number = feature_search.best_params_
+    print( feature_number)
+    print('------------cv_results = ---------')
+    cv_results = pd.DataFrame(feature_search.cv_results_)
+
+    print(cv_results.columns)
+
+    plt.figure(figsize=(16,6))
+
+    plt.plot(cv_results["param_n_features_to_select"], cv_results["mean_test_score"])
+    plt.plot(cv_results["param_n_features_to_select"], cv_results["mean_train_score"])
+    plt.xlabel('number of features')
+    plt.ylabel('r-squared')
+    plt.title("Optimal Number of Features")
+    plt.legend(['test score', 'train score'], loc='upper left')
+    plt.show()
+
+    return feature_number
+
+def RFE_model(estimator, feature_number, scoring):
+    # print(X_train[X_train.isnull().sum().index])
+    model_lr = estimator
+    model_lr.fit(X_train, y_train)
+    # TODO: try ridge, lasso and eccentric and see the best performaer
+    # TODO: play around with the maps
+    # feature selection
+    feature_number = feature_number #best_feature_no(model_lr)
+    rfe_object = RFE(model_lr, n_features_to_select=feature_number)
+    rfe_object.fit(X_train, y_train)
+
+    print(rfe_object.ranking_)
+    column = X_train.columns.to_list()
+    for x,y in sorted(zip(rfe_object.ranking_, column), key = itemgetter(0)):
+        # show 1st 10 features
+        print(x,y)
+        if x == feature_number + 3:
+            break
+
+    # Predict 
+    y_train_pred = rfe_object.predict(X_train)
+    y_test_pred = rfe_object.predict(X_test)
+
+    # Performance of the selected 10 features
+    if scoring == 'r2':
+        train_score1 = r2_score(y_train, y_train_pred)
+        test_score1 = r2_score(y_test, y_test_pred)
+
+        # print('best estimator = ', rfe_object.best_estimator_)
+    elif scoring == 'neg_mean_absolute_error':
+        train_score1 = mean_absolute_error(y_train, y_train_pred)
+        test_score1 = mean_absolute_error(y_test, y_test_pred)
+    
+    print (f'training data prediction score for {scoring} is = {train_score1}') # = 0.3202592463942481
+    print (f'test data prediction score for {scoring} is = {test_score1}') # = 0.2975885376233065
+
+
 
 facebook_comments = impute_missing(facebook_comments)
 facebook_comments = convert_toInt(facebook_comments)
@@ -104,49 +177,26 @@ X_test_list = feature_scaler.transform(X_test.values)
 X_test = pd.DataFrame(X_test_list, index=X_test.index, columns=X_test.columns)
 
 
-# print(X_train[X_train.isnull().sum().index])
-model_lr = LinearRegression()
+model_lr = LinearRegression()   #train_r2_score= 0.3202592463942481,  test_r2_score= 0.2975885376233065
+model_ridge = Ridge()
+#train_r2_score= 0.3564303265952593,  test_r2_score= 0.24465573273899666
+#train_MAE_score= 7.382574073988469,  test_MAE_score= 6.734786603682472
 
-# TODO: try ridge, lasso and eccentric and see the best performaer
-# TODO: play around with the maps
-# feature selection
-feature_number = 45
-rfe_object = RFE(model_lr, n_features_to_select=feature_number)
-rfe_object.fit(X_train, y_train)
+model_lasso = Lasso()   
+#train_r2_score= 0.33684651651352526,  test_r2_score= 0.2819304519846273
+#train_MAE_score= 6.717708472548399,  test_MAE_score= 7.378769880326644
 
-print(rfe_object.ranking_)
-column = X_train.columns.to_list()
-for x,y in sorted(zip(rfe_object.ranking_, column), key = itemgetter(0)):
-    # show 1st 10 features
-    print(x,y)
-    if x == feature_number + 3:
-        break
+scoring_r2 = 'r2'
+scoring_MAE = 'neg_mean_absolute_error'
 
-# Predict 
-y_train_pred = rfe_object.predict(X_train)
-y_test_pred = rfe_object.predict(X_test)
+# Cross validation
+scores = cross_val_score(model_lasso, X_train, y_train, scoring=scoring_MAE, cv=5) # = 0.3064387581535156
+print(scores) 
+print(f'%%%%%%%%%%%%%%%%%%%%%% Expected score = {scores.mean()}') # Gives a rough idea of what the score will be
 
-# Performance of the selected 10 features
-train_score1 = r2_score(y_train, y_train_pred)
-test_score1 = r2_score(y_test, y_test_pred)
+feature_number = best_feature_no(model_lasso, scoring_MAE)
+RFE_model(model_lasso, feature_number['n_features_to_select'], scoring_MAE)
 
-print ('training data prediction score = ',train_score1)
-print ('test data prediction score = ',test_score1)
+# lasso() gives best results
 
-# Use grid searchCV to find best number of features
-param_grid = {'n_features_to_select':[5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80]}
-feature_search = GridSearchCV(estimator = RFE(model_lr), param_grid = param_grid, scoring = 'r2' , cv = 5)
-# feature_search.fit(X_train, y_train)
-
-# print(feature_search.best_params_)
-# feature_number = 45
-# model_lr_featured = GridSearchCV(estimator=model_lr, param_grid={'feature_names':[5,10,20,30,40,50,60,70,80]})
-# model_lr_featured.fit(X_train, y_train)
-# model_lr.fit(X_train, y_train)
-# print(model_lr.intercept_)
-
-# print(list(zip(x_train.columns, model_lr.coef_)))
-
-
-# converted_to_int = convert_toInt()
-# print(converted_to_int)
+# %%
