@@ -9,7 +9,9 @@ from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import KFold
 from sklearn.feature_selection import RFE
-from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score, confusion_matrix
+from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score, confusion_matrix, roc_auc_score, precision_recall_curve
+from sklearn.metrics import fbeta_score
+
 
 from operator import itemgetter
 
@@ -60,7 +62,7 @@ def convert_to_int(df):
 
 def cross_validate(model, X, y, cv_no):
     scores = cross_val_score(model, X, y, cv=cv_no)
-    print(scores.mean())
+    print(f'Expected score = {scores.mean()}')
 
 def grid_Search(model, param_grid, cv_no, X, y):
     search = GridSearchCV(estimator = model, param_grid=param_grid, cv=cv_no, refit=True)
@@ -82,7 +84,6 @@ def best_features(model, param_grid, best_scoring, X, y):
 
     return feature_no
 
-
 def RFE_model(model, feature_no, X, y):
     rfe_object = RFE(estimator=model, n_features_to_select = feature_no)
     # X = X.loc[:,['PAY_0', 'PAY_2', 'PAY_AMT2']]
@@ -101,36 +102,81 @@ def RFE_model(model, feature_no, X, y):
  
     # Predict
     y_pred = rfe_object.predict(X)
+    y_pred_proba = rfe_object.predict_proba(X)[:,1]
 
-    # Perfomance
-    accuracy = accuracy_score(y, y_pred)
-    precision = precision_score(y, y_pred)
-    f1 = f1_score(y, y_pred)
-    recall = recall_score(y, y_pred)
-
-    perfomance_score = pd.DataFrame([[accuracy,precision,f1,recall]], columns=['accuracy','precision','f1','recall'])
-
-    print('perfomance score for l1 penalty = ')
-    print(perfomance_score)
-
+    # calculate perfomance
+    print('--------------------------Perfomance without optimum threshold---------------------------')
+    calculate_perfomance(y, y_pred, y_pred_proba)
     # Predict probability 
-    y_prob = rfe_object.predict_proba(X)
-    print(list(zip(y, y_prob[:,1]))[:10])
+    # y_pred_proba = rfe_object.predict_proba(X)
+    print(list(zip(y, y_pred_proba))[:10])
     print('-----------correlation matrix-------')
     # print(X.corr())
 
+    y_pred_cutoff = calculate_best_cutoff(y_pred_proba, y)
+    # calculate perfomance
+    print('--------------------------Perfomance WITH optimum threshold---------------------------')
+    calculate_perfomance(y, y_pred, y_pred_cutoff)
+    # return
     ## EXTRA: Confusion Matrix
-    cm = confusion_matrix(y, y_pred) # rows = truth, cols = prediction
+    cm = confusion_matrix(y, y_pred_cutoff) # rows = truth, cols = prediction
     df_cm = pd.DataFrame(cm, index = (0, 1), columns = (0, 1))
     plt.figure(figsize = (10,7))
     sns.set(font_scale=1.4)
     sns.heatmap(df_cm, annot=True, fmt='g')
     print("Test Data Accuracy: %0.4f" % accuracy_score(y, y_pred)) 
+    print('-----------confusion matrix-------')
+    print(df_cm)
 
+def calculate_perfomance(y, y_pred, y_pred_proba):
+    # Perfomance
+    accuracy = accuracy_score(y, y_pred)    # = 0.813143
+    precision = precision_score(y, y_pred)    # = 0.693738
+    f1 = f1_score(y, y_pred)    # = 0.363194
+    recall = recall_score(y, y_pred)    # = 0.245988
+    roc_auc = roc_auc_score(y, y_pred_proba)  # = 0.704876 / 0.522225
 
+    perfomance_score = pd.DataFrame([[accuracy,precision,f1,recall, roc_auc]], columns=['accuracy','precision','f1','recall', 'roc_auc'])
 
+    print('perfomance score for l1 penalty = ')
+    print(perfomance_score)
 
+def calculate_best_cutoff(y_pred_proba, y):
+    precisions, recalls, thresholds = precision_recall_curve(y, y_pred_proba)
 
+    fscores = (2 * precisions * recalls) / (precisions + recalls)
+    
+    optimal_idx = np.argmax(fscores)
+    
+    threshold =  thresholds[optimal_idx]
+    fsscores = fscores[optimal_idx]
+    print('--------threshold---------')
+    print(threshold)
+    print('--------fsscores---------')
+    print(fsscores)
+
+    prediction = (y_pred_proba >= threshold).astype(int)
+
+    return prediction
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  
+# def threshold_from_desired_precision(self, X, y, desired_precision=0.9):
+#     y_scores = LogisticRegression.predict_proba(self, X)[:, 1]
+#     precisions, recalls, thresholds = precision_recall_curve(y, y_scores)
+
+#     desired_precision_idx = np.argmax(precisions >= desired_precision)
+    
+#     return thresholds[desired_precision_idx], recalls[desired_precision_idx]
+
+# def threshold_from_desired_recall(self, X, y, desired_recall=0.9):
+#     y_scores = LogisticRegression.predict_proba(self, X)[:, 1]
+#     precisions, recalls, thresholds = precision_recall_curve(y, y_scores)
+
+#     desired_recall_idx = np.argmin(recalls >= desired_recall)
+    
+#     return thresholds[desired_recall_idx], precisions[desired_recall_idx]
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 
 # draw_point_plt_for_columns(df.iloc[:,[0,1,2,3,target_index ]])
 
 # df = transform_right_skewed(df)
@@ -139,6 +185,7 @@ df = convert_to_int(df)
 
 X = df.drop('default payment next month', axis=1)
 y = df['default payment next month']
+
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.7)
 
@@ -149,7 +196,7 @@ X_test = pd.DataFrame(scaler.transform(X_test.values), index=X_test.index, colum
 
 model_lr = LogisticRegression()
 
-# cross_validate(model_lr, X_train, y_train, 5)   # 0.7787000000000001
+cross_validate(model_lr, X_train, y_train, 5)   # 0.7787000000000001
 
 param_grid_model = {'penalty':['l1', 'l2'], 'C':np.logspace(-3,3,7)}
 param_grid_features = {'n_features_to_select': np.arange(0,25,3)}

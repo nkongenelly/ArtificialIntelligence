@@ -10,16 +10,16 @@ from sklearn.linear_model import Lasso
 from sklearn. linear_model import ElasticNet
 from sklearn.preprocessing import StandardScaler
 from sklearn.feature_selection import RFE
-from sklearn.metrics import r2_score
+from sklearn.metrics import r2_score, mean_squared_error
 from sklearn.metrics import mean_absolute_error
 import matplotlib.pyplot as plt
 from sklearn.model_selection import KFold
 from sklearn.model_selection import cross_val_score
-
+import seaborn as sns
 from operator import itemgetter
 
-file = r'D:\AI_ML\AI\Machine Learning in Python\data\data\facebook_comments.csv'
-# file = r'/mnt/d/AI_ML/AI/Machine Learning in Python/data/data/facebook_comments.csv'
+# file = r'D:\AI_ML\AI\Machine Learning in Python\data\data\facebook_comments.csv'
+file = r'/mnt/d/AI_ML/AI/Machine Learning in Python/data/data/facebook_comments.csv'
 
 facebook_comments = pd.read_csv(file)
 
@@ -91,11 +91,17 @@ def cyclic_features(facebook_comments):
     print(facebook_comments.shape)
     return facebook_comments
 
+def remove_outliers(X_train, percentile_value, outlier_columns):
+    for col in outlier_columns:
+        X_train[col] = np.where(X_train[col] > percentile_value, X_train[col].mean(), X_train[col])
+        
+    return X_train
+
 def best_feature_no(model_lr, scoring):
     model_lr.fit(X_train, y_train)
 
     # Use grid searchCV to find best number of features
-    param_grid = {'n_features_to_select': np.arange(0,85,5)}
+    param_grid = {'n_features_to_select': np.arange(0,85,5), 'alpha': np.linspace(1,100,100)}
     folds = KFold(n_splits=5, shuffle=True, random_state=100)
 
     feature_search = GridSearchCV(estimator = RFE(model_lr), param_grid = param_grid, scoring = scoring , cv = folds, return_train_score=True)
@@ -154,8 +160,13 @@ def RFE_model(estimator, feature_number, scoring):
     
     print (f'training data prediction score for {scoring} is = {train_score1}') # = 0.3202592463942481
     print (f'test data prediction score for {scoring} is = {test_score1}') # = 0.2975885376233065
+    mse = mean_squared_error(y_train, y_train_pred) #857.2621770736797
+    print(f'MSE of training model = {mse}')
+    print(f'MAE of training model = {mean_absolute_error(y_train, y_train_pred)}')
+    # print(f'training accuracy of model is = {accuracy_score(y_train, y_train_pred)}')
 
-
+def view_features_outliers(data):
+    sns.boxplot(data)
 
 facebook_comments = impute_missing(facebook_comments)
 facebook_comments = convert_toInt(facebook_comments)
@@ -166,7 +177,7 @@ facebook_comments = cyclic_features(facebook_comments)
 y = facebook_comments['Comments_in_next_H_hrs']
 X = facebook_comments.drop('Comments_in_next_H_hrs', axis=1)
 
-X_train, X_test, y_train, y_test = train_test_split(X,y, train_size=0.3)
+X_train, X_test, y_train, y_test = train_test_split(X,y, train_size=0.7)
 
 # Scaling the data
 feature_scaler = StandardScaler()
@@ -176,7 +187,36 @@ X_train = pd.DataFrame(X_train_list, index=X_train.index, columns=X_train.column
 X_test_list = feature_scaler.transform(X_test.values)
 X_test = pd.DataFrame(X_test_list, index=X_test.index, columns=X_test.columns)
 
+# sns.boxplot(X_train.iloc[:,0])
+# X_train.iloc[:,65:77].boxplot()
+# plt.show()
 
+
+# print(f'-----outlier column = {list(X_train.columns)[0]}')
+
+outlier_columns = ['likes', 'talking_about', 'feat5', 'feat10', 'feat12', 'feat13', 'feat15', 'feat18', 'feat20', 'feat22',
+'feat27', 'feat28', 'Post_Length', 'Post Share Count' ]
+percentile_value = X_train.iloc[:,0].quantile(0.99)
+
+# print(X_train['likes'].dtype)
+# print(f'************outliers before = **********')
+# # print(X_train.loc[X_train.iloc[:,0] > percentile_value][list(X_train.columns)[0]].count())
+
+X_train = remove_outliers(X_train, percentile_value, outlier_columns)
+
+# X_train.iloc[:,0:6].boxplot()
+# plt.show()
+# print(f'************outliers after = **********')
+# # print(X_train.loc[X_train.iloc[:,0] > percentile_value][list(X_train.columns)[0]].count())
+# view_features_outliers(X_train.iloc[:,0])
+
+
+
+
+
+# print('---------------quantile------')
+# print(X_train.iloc[:,0].quantile(0.99))
+# print(X_train.loc[:,X_train.iloc[:,0].quantile(0.75)])
 model_lr = LinearRegression()   #train_r2_score= 0.3202592463942481,  test_r2_score= 0.2975885376233065
 model_ridge = Ridge()
 #train_r2_score= 0.3564303265952593,  test_r2_score= 0.24465573273899666
@@ -190,13 +230,15 @@ scoring_r2 = 'r2'
 scoring_MAE = 'neg_mean_absolute_error'
 
 # Cross validation
-scores = cross_val_score(model_lasso, X_train, y_train, scoring=scoring_MAE, cv=5) # = 0.3064387581535156
+scores = cross_val_score(model_lasso, X_train, y_train, scoring=scoring_r2, cv=5) # = 0.3064387581535156
 print(scores) 
 print(f'%%%%%%%%%%%%%%%%%%%%%% Expected score = {scores.mean()}') # Gives a rough idea of what the score will be
 
-feature_number = best_feature_no(model_lasso, scoring_MAE)
-RFE_model(model_lasso, feature_number['n_features_to_select'], scoring_MAE)
+# feature_number = best_feature_no(model_lasso, scoring_MAE)
+feature_no = 45 # feature_number['n_features_to_select']
+RFE_model(model_lasso, feature_no, scoring_r2)
 
-# lasso() gives best results
-
+# # lasso() gives best results
+# print(X_train.shape)
+# print(X_train.columns)
 # %%
