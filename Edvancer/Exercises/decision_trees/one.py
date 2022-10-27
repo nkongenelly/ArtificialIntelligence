@@ -18,12 +18,16 @@ import seaborn as sns
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn import tree
+from sklearn.base import BaseEstimator, TransformerMixin
 
 from operator import itemgetter
 
 class Decision_tree:
     def __init__(self, file):
         self.df = pd.read_csv(file)
+        self.cyclic_cols = ['Post Published Weekday','Base Date Time Weekday']
+        cat_columns = (self.df.select_dtypes('O')).columns
+        self.cat_columns = np.setdiff1d(cat_columns, self.cyclic_cols)
 
     def set_X_train(self,param):
         self.X_train = param
@@ -52,30 +56,24 @@ class Decision_tree:
         else:
             print('#############################')
             print(impute_missing_cols)
+
         return self.df
 
     def convert_toInt(self):
         convert_to_int = []
-        for col in self.df:
-            if self.df[col].dtype == 'float64' or self.df[col].dtype == 'uint8':
+        df = self.df.copy()
+        df.drop(self.cat_columns, axis=1, inplace=True)
+        for col in df:
+            if df[col].dtype == 'float64' or df[col].dtype == 'uint8':
                 convert_to_int.append(col)
-                self.df[col] = self.df[col].astype(float).astype('int64')
+                self.df[col] = df[col].astype(float).astype('int64')
         print(convert_to_int)
         return self.df   
 
-    def get_dummyData(self, cutoff):
-        categories = self.df['page_category'].value_counts()
-
-        page_category_mode = self.df['page_category'].mode()[0]
-        self.df['page_category'] = np.where(categories[self.df['page_category']] <= cutoff, page_category_mode , self.df['page_category'])
-
-        categorical = pd.get_dummies(self.df['page_category'], prefix='page_category', drop_first=True)
-        # categorical = convert_toInt(categorical)
-
-        self.df = pd.concat([self.df.reset_index(drop=True),categorical.reset_index(drop=True)], axis = 1)
-        self.df = self.df.drop('page_category', axis=1)
-
-        return self.df
+    def get_dummyData(self, cutoff=0):
+        dummify = categorical_dummies(cutoff, file)
+        dummify.fit()
+        self.df = dummify.transform()
 
     def days_toNumbers(self):
         days_list = ['Post Published Weekday','Base Date Time Weekday']
@@ -84,17 +82,15 @@ class Decision_tree:
         for days_col in days_list:
             self.df[days_col] = self.df[days_col].map(days)
             print(self.df.shape)
-        
         return self.df
 
     def cyclic_features(self):
-        cyclic_list = ['Post Published Weekday','Base Date Time Weekday']
+        cyclic_list = self.cyclic_cols
         for cyclic_col in cyclic_list:
             self.df[cyclic_col+'_sin']=np.sin(2*np.pi*self.df[cyclic_col])/7
             self.df[cyclic_col+'_cos']=np.cos(2*np.pi*self.df[cyclic_col])/7
 
             self.df = self.df.drop(cyclic_col, axis=1)
-            # del self.df[cyclic_col]
         print(self.df.shape)
         return self.df
 
@@ -105,37 +101,34 @@ class Decision_tree:
 
         return X_train
 
-    def best_feature_no(self,model_lr, **kwargs):
+    def best_feature_no(self,model_lr,**kwargs):
         scoring=kwargs.get('scoring', None)
         # model_lr.fit(X_train, y_train)
 
         # Use grid searchCV to find best number of features
         param_grid = {'n_features_to_select': np.arange(0,85,5)}
-
         folds = KFold(n_splits=5, shuffle=True, random_state=100)
 
-        feature_search = GridSearchCV(estimator = RFE(model_lr), param_grid = param_grid , cv = folds, return_train_score=True)
+        feature_search = GridSearchCV(estimator = RFE(model_lr), param_grid = param_grid, cv = folds, return_train_score=True)
         feature_search.fit(self.X_train, self.y_train)
         feature_number = feature_search.best_params_
         print( feature_number)
         print('------------cv_results = ---------')
-        print(feature_search.best_estimator_)
-        # cv_results = pd.DataFrame(feature_search.cv_results_)
+        cv_results = pd.DataFrame(feature_search.cv_results_)
 
-        # print(cv_results.columns)
+        print(cv_results.columns)
 
-        # plt.figure(figsize=(16,6))
+        plt.figure(figsize=(16,6))
 
-        # plt.plot(cv_results["param_n_features_to_select"], cv_results["mean_test_score"])
-        # plt.plot(cv_results["param_n_features_to_select"], cv_results["mean_train_score"])
-        # plt.xlabel('number of features')
-        # plt.ylabel('r-squared')
-        # plt.title("Optimal Number of Features")
-        # plt.legend(['test score', 'train score'], loc='upper left')
-        # plt.show()
+        plt.plot(cv_results["param_n_features_to_select"], cv_results["mean_test_score"])
+        plt.plot(cv_results["param_n_features_to_select"], cv_results["mean_train_score"])
+        plt.xlabel('number of features')
+        plt.ylabel('r-squared')
+        plt.title("Optimal Number of Features")
+        plt.legend(['test score', 'train score'], loc='upper left')
+        plt.show()
 
         return feature_number
-
     def best_treemodel_estimator(self, model_lr):
         param_grid = {'max_features': ['auto', 'sqrt', 'log2'],
               'ccp_alpha': [0.1, .01, .001],
@@ -168,7 +161,7 @@ class Decision_tree:
 
         self.export_tree_diagram(model_lr, self.X_train.columns)
         # TODO: try ridge, lasso and eccentric and see the best performaer
-        # TODO: play around with the maps
+        # TODO: play around with the plots
         # feature selection
         feature_number = feature_number #best_feature_no(model_lr)
         rfe_object = RFE(model_lr, n_features_to_select=feature_number)
@@ -200,6 +193,46 @@ class Decision_tree:
 
     def view_features_outliers(self,data):
         sns.boxplot(data)
+
+class categorical_dummies(BaseEstimator, TransformerMixin, Decision_tree):
+    def __init__(self, freq_cutoff, file):
+        super().__init__(file)
+        self.frequency_cutoff = freq_cutoff
+        self.var_cat_dict = {}
+        self.feature_names = []
+
+    def fit(self, X=None, y=None):
+        X = self.df
+        cat_columns = self.cat_columns
+        columns = X[cat_columns].columns
+        for col in columns:
+            counts = X[col].value_counts()
+
+            if (counts.values < self.frequency_cutoff).sum() == 0:
+                cats = counts.index[:-1]
+            else:
+                cats = counts.index[counts.values > self.frequency_cutoff]
+        
+            self.var_cat_dict[col] = cats
+
+        for col in self.var_cat_dict.keys():
+            for cat in self.var_cat_dict[col]:
+                name = col + "_" + str(cat)
+                self.feature_names.append(name)
+
+    def transform(self, X=None, y=None):
+        X = self.df
+        dummy_data = X.copy()
+
+        for col in self.var_cat_dict.keys():
+            for cat in self.var_cat_dict[col]:
+                name = col + "_" + str(cat)
+                dummy_data[name] = (dummy_data[col]==cat).astype(int)
+
+            del dummy_data[col]
+            X.drop(col, axis=1, inplace=True)
+
+        return dummy_data
 
 # file = r'D:\AI_ML\AI\Machine Learning in Python\data\data\facebook_comments.csv'
 file = r'/mnt/d/AI_ML/AI/Machine Learning in Python/data/data/facebook_comments.csv'

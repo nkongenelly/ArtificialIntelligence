@@ -27,9 +27,6 @@ class Linear_Regression:
         cat_columns = (self.df.select_dtypes('O')).columns
         self.cat_columns = np.setdiff1d(cat_columns, self.cyclic_cols)
 
-    def del_df_cols(self, cols):
-        self.df.drop(cols, axis=1, inplace=True)
-
     def set_X_train(self,param):
         self.X_train = param
     
@@ -71,7 +68,7 @@ class Linear_Regression:
         print(convert_to_int)
         return self.df   
 
-    def get_dummyData(self, cutoff):
+    def get_dummyData(self, cutoff=0):
         dummify = categorical_dummies(cutoff, file)
         dummify.fit()
         self.df = dummify.transform()
@@ -173,7 +170,8 @@ class Linear_Regression:
         print (f'training data prediction score for {scoring} is = {train_score1}') # = 0.3202592463942481
         print (f'test data prediction score for {scoring} is = {test_score1}') # = 0.2975885376233065
         mse = mean_squared_error(self.y_train, y_train_pred) #857.2621770736797
-        print(f'accuracy of model = {mse}')
+        print(f'MSE of model = {mse}')
+        print(f'MAE of model = {mean_absolute_error(self.y_train, y_train_pred)}')
 
     def view_features_outliers(self,data):
         sns.boxplot(data)
