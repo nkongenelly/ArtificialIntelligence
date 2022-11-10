@@ -75,6 +75,7 @@ class Random_Forest:
                 ("category", self.categorical_transformers, self.categorical_cols)
             ]
         )
+        self.preprocessor.fit_transform(self.X_train)
         return self.preprocessor
 
     def model_pipeline(self, classifier):
@@ -151,7 +152,7 @@ print('df numeric_cols= ', r_model.categorical_cols)
 r_model.target_to_binary()
 r_model.target_numeric()
 r_model.categorical_data()
-a = r_model.preprocessor()
+# a = r_model.preprocessor()
 # print(a)
 
 # # split the data
@@ -167,6 +168,8 @@ r_model.set_X_train(X_train)
 r_model.set_X_test(X_test)
 r_model.set_y_train(y_train)
 r_model.set_y_test(y_test)
+
+a = r_model.preprocessor()
 
 # build and train the model
 classifier = RandomForestClassifier()
